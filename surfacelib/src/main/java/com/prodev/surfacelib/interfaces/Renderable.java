@@ -7,5 +7,6 @@ import com.simplelib.math.Vector2;
 
 public interface Renderable {
     Bitmap export(Vector2 size);
+
     void render(Canvas canvas);
 }

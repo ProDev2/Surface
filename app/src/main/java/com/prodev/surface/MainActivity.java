@@ -20,7 +20,7 @@ public class MainActivity extends SimpleActivity {
 
         surface = (Surface) findViewById(R.id.main_surface);
 
-        ImageLayer image = new ImageLayer(new Vector2(1920, 1080));
+        final ImageLayer image = new ImageLayer(new Vector2(1920, 1080));
         image.setImage(ImageTools.createImage(1000, 1000, 0xff00ff00));
         image.setId("image");
 

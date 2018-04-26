@@ -8,8 +8,10 @@ public interface RenderModifier {
     void setLayer(Layer layer);
 
     void onSubdraw(Canvas canvas);
+
     void onOverdraw(Canvas canvas);
 
     void onSubdrawSubLayers(Canvas canvas);
+
     void onOverdrawSubLayers(Canvas canvas);
 }

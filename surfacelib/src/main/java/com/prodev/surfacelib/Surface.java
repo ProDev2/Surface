@@ -45,37 +45,43 @@ public class Surface extends View implements Runnable {
 
     @Override
     public void run() {
-        invalidate();
+        if (renderer != null)
+            invalidate();
     }
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         if (renderer != null && bounds != null) {
-            switch (event.getAction()) {
-                case MotionEvent.ACTION_DOWN:
-                    if (touchedLayer == null) {
-                        float xP = (event.getX() - bounds.getX()) / bounds.getWidth();
-                        float yP = (event.getY() - bounds.getY()) / bounds.getHeight();
+            Layer mainLayer = renderer.getMainLayer();
 
-                        float relX = bounds.getWidth() * xP;
-                        float relY = bounds.getHeight() * yP;
+            if (event.getAction() == MotionEvent.ACTION_DOWN && touchedLayer == null) {
+                float xP = (event.getX() - bounds.getX()) / bounds.getWidth();
+                float yP = (event.getY() - bounds.getY()) / bounds.getHeight();
 
-                        if (relX >= 0 && relY >= 0 && relX <= bounds.getWidth() && relY <= bounds.getHeight())
-                            touchedLayer = renderer.findAtPos(new Vector2(relX, relY));
-                    }
-                    break;
+                float relX = mainLayer.getWidth() * xP;
+                float relY = mainLayer.getHeight() * yP;
 
-                case MotionEvent.ACTION_UP:
-                    touchedLayer = null;
-                    break;
+                if (mainLayer.containsPoint(new Vector2(relX, relY))) {
+                    touchedLayer = renderer.findAtPos(new Vector2(relX, relY));
+                    handleTouch(event);
+                    return true;
+                }
             }
 
             if (touchedLayer != null) {
-                
+                handleTouch(event);
             }
+
+            if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL)
+                touchedLayer = null;
         }
 
         return super.onTouchEvent(event);
+    }
+
+    private void handleTouch(MotionEvent event) {
+        if (touchedLayer != null)
+            touchedLayer.handleTouch(event);
     }
 
     @Override

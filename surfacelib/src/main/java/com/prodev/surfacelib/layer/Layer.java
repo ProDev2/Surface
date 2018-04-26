@@ -3,7 +3,10 @@ package com.prodev.surfacelib.layer;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.view.MotionEvent;
 
+import com.prodev.surfacelib.interaction.InteractManager;
+import com.prodev.surfacelib.interfaces.Interactable;
 import com.prodev.surfacelib.interfaces.RenderModifier;
 import com.prodev.surfacelib.interfaces.Renderable;
 import com.prodev.surfacelib.interfaces.Updatable;
@@ -29,6 +32,8 @@ public abstract class Layer extends Vector4 implements Renderable, Updatable {
     private int alpha;
     private int backgroundColor;
 
+    private InteractManager interactManager;
+
     public Layer(int width, int height) {
         this(0, 0, width, height);
     }
@@ -47,6 +52,8 @@ public abstract class Layer extends Vector4 implements Renderable, Updatable {
         this.subLayers = new ArrayList<>();
         this.modifiers = new ArrayList<>();
 
+        this.interactManager = new InteractManager(this);
+
         init();
     }
 
@@ -57,12 +64,16 @@ public abstract class Layer extends Vector4 implements Renderable, Updatable {
         this.backgroundColor = 0x00000000;
     }
 
+    public String getId() {
+        return id;
+    }
+
     public void setId(String id) {
         this.id = id;
     }
 
-    public String getId() {
-        return id;
+    public Renderer getRenderer() {
+        return renderer;
     }
 
     public void setRenderer(Renderer renderer) {
@@ -71,18 +82,14 @@ public abstract class Layer extends Vector4 implements Renderable, Updatable {
         updateSubLayers();
     }
 
+    public Layer getParentLayer() {
+        return parentLayer;
+    }
+
     public void setParentLayer(Layer parentLayer) {
         this.parentLayer = parentLayer;
 
         updateSubLayers();
-    }
-
-    public Renderer getRenderer() {
-        return renderer;
-    }
-
-    public Layer getParentLayer() {
-        return parentLayer;
     }
 
     public void callUpdate() {
@@ -128,28 +135,28 @@ public abstract class Layer extends Vector4 implements Renderable, Updatable {
         }
     }
 
-    public void setDrawLayer(boolean drawLayer) {
-        this.drawLayer = drawLayer;
-    }
-
-    public void setAlpha(int alpha) {
-        this.alpha = alpha;
-    }
-
-    public void setBackgroundColor(int backgroundColor) {
-        this.backgroundColor = backgroundColor;
-    }
-
     public boolean isDrawLayer() {
         return drawLayer;
+    }
+
+    public void setDrawLayer(boolean drawLayer) {
+        this.drawLayer = drawLayer;
     }
 
     public int getAlpha() {
         return alpha;
     }
 
+    public void setAlpha(int alpha) {
+        this.alpha = alpha;
+    }
+
     public int getBackgroundColor() {
         return backgroundColor;
+    }
+
+    public void setBackgroundColor(int backgroundColor) {
+        this.backgroundColor = backgroundColor;
     }
 
     public Layer findLayerById(String id) {
@@ -192,6 +199,22 @@ public abstract class Layer extends Vector4 implements Renderable, Updatable {
             return getParentLayer().getAbsoluteRotation() + rotation;
         else
             return rotation;
+    }
+
+    public InteractManager getInteractManager() {
+        return interactManager;
+    }
+
+    public void addInteractionListener(Interactable interactListener) {
+        interactManager.addListener(interactListener);
+    }
+
+    public void removeInteractionListener(Interactable interactListener) {
+        interactManager.removeListener(interactListener);
+    }
+
+    public void handleTouch(MotionEvent event) {
+        interactManager.handleTouch(event);
     }
 
     @Override
