@@ -31,6 +31,13 @@ public class Renderer implements Renderable {
     }
 
     public void callUpdate() {
+        callUpdate(false);
+    }
+
+    public void callUpdate(boolean redrawAll) {
+        if (redrawAll)
+            layer.redrawAll();
+
         for (Runnable update : updates)
             update.run();
     }
@@ -50,6 +57,10 @@ public class Renderer implements Renderable {
 
     public Layer getMainLayer() {
         return layer;
+    }
+
+    public void addSubLayer(Layer subLayer) {
+        layer.addSubLayer(subLayer);
     }
 
     public Layer findLayerById(String id) {

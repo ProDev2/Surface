@@ -9,6 +9,7 @@ import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 
+import com.prodev.surfacelib.interaction.Editor;
 import com.prodev.surfacelib.layer.Layer;
 import com.prodev.surfacelib.render.Renderer;
 import com.simplelib.math.Vector2;
@@ -23,6 +24,8 @@ public class Surface extends View implements Runnable {
     private Vector4 bounds;
 
     private Layer touchedLayer;
+
+    private Editor editor;
 
     public Surface(Context context) {
         super(context);
@@ -43,6 +46,10 @@ public class Surface extends View implements Runnable {
         run();
     }
 
+    public Editor getEditor() {
+        return editor;
+    }
+
     @Override
     public void run() {
         if (renderer != null)
@@ -55,8 +62,9 @@ public class Surface extends View implements Runnable {
             Layer mainLayer = renderer.getMainLayer();
 
             if (event.getAction() == MotionEvent.ACTION_DOWN && touchedLayer == null) {
-                float xP = (event.getX() - bounds.getX()) / bounds.getWidth();
-                float yP = (event.getY() - bounds.getY()) / bounds.getHeight();
+                Vector2 relPos = bounds.getRelativePos(new Vector2(event.getX(), event.getY()));
+                float xP = relPos.getX() / bounds.getWidth();
+                float yP = relPos.getY() / bounds.getHeight();
 
                 float relX = mainLayer.getWidth() * xP;
                 float relY = mainLayer.getHeight() * yP;
@@ -68,9 +76,7 @@ public class Surface extends View implements Runnable {
                 }
             }
 
-            if (touchedLayer != null) {
-                handleTouch(event);
-            }
+            handleTouch(event);
 
             if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL)
                 touchedLayer = null;
@@ -82,6 +88,11 @@ public class Surface extends View implements Runnable {
     private void handleTouch(MotionEvent event) {
         if (touchedLayer != null)
             touchedLayer.handleTouch(event);
+
+        if (editor != null) {
+            editor.setLayer(touchedLayer);
+            run();
+        }
     }
 
     @Override
@@ -119,6 +130,9 @@ public class Surface extends View implements Runnable {
         super.onDraw(canvas);
 
         if (renderer != null) {
+            if (editor == null)
+                editor = new Editor(renderer, renderer.getMainLayer());
+
             Layer mainLayer = renderer.getMainLayer();
 
             Bitmap bitmap = mainLayer.export(new Vector2(getWidth(), getHeight()));
@@ -137,6 +151,10 @@ public class Surface extends View implements Runnable {
             paint.setAlpha(mainLayer.getAlpha());
 
             canvas.drawBitmap(bitmap, bounds.getAsMatix(), paint);
+
+            editor.setRenderer(renderer);
+            editor.setBounds(bounds);
+            editor.render(canvas);
         }
     }
 

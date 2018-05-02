@@ -26,5 +26,13 @@ public class MainActivity extends SimpleActivity {
 
         renderer = new Renderer(image);
         surface.setRenderer(renderer);
+
+        final ImageLayer image2 = new ImageLayer(image.getCenter().multiply(new Vector2(1, 0.5f)));
+        image2.setImage(ImageTools.createImage(1000, 1000, 0xffff0000));
+        image2.setId("image2");
+        image2.setRotationPoint(image2.getWidth(), image2.getHeight());
+        image2.setRotation(45);
+        image2.moveBy(0, image2.getHeight() * 2f);
+        renderer.addSubLayer(image2);
     }
 }

@@ -14,4 +14,6 @@ public interface RenderModifier {
     void onSubdrawSubLayers(Canvas canvas);
 
     void onOverdrawSubLayers(Canvas canvas);
+
+    boolean needsToBeRedrawn();
 }

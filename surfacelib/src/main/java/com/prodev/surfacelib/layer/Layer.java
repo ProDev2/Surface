@@ -32,6 +32,9 @@ public abstract class Layer extends Vector4 implements Renderable, Updatable {
     private int alpha;
     private int backgroundColor;
 
+    private boolean redrawImage;
+    private Bitmap lastResult;
+
     private InteractManager interactManager;
 
     public Layer(int width, int height) {
@@ -113,12 +116,14 @@ public abstract class Layer extends Vector4 implements Renderable, Updatable {
             subLayer.setRenderer(renderer);
             subLayer.setParentLayer(this);
             subLayers.add(subLayer);
+            redraw();
         }
     }
 
     public void removeSubLayer(Layer subLayer) {
         if (subLayer != null && subLayers.contains(subLayer)) {
             subLayers.remove(subLayer);
+            redraw();
         }
     }
 
@@ -126,12 +131,14 @@ public abstract class Layer extends Vector4 implements Renderable, Updatable {
         if (modifier != null && !modifiers.contains(modifier)) {
             modifier.setLayer(this);
             modifiers.add(modifier);
+            redraw();
         }
     }
 
     public void removeRenderModifier(RenderModifier modifier) {
         if (modifier != null && modifiers.contains(modifier)) {
             modifiers.remove(modifier);
+            redraw();
         }
     }
 
@@ -141,6 +148,7 @@ public abstract class Layer extends Vector4 implements Renderable, Updatable {
 
     public void setDrawLayer(boolean drawLayer) {
         this.drawLayer = drawLayer;
+        redraw();
     }
 
     public int getAlpha() {
@@ -149,6 +157,7 @@ public abstract class Layer extends Vector4 implements Renderable, Updatable {
 
     public void setAlpha(int alpha) {
         this.alpha = alpha;
+        redraw();
     }
 
     public int getBackgroundColor() {
@@ -157,6 +166,7 @@ public abstract class Layer extends Vector4 implements Renderable, Updatable {
 
     public void setBackgroundColor(int backgroundColor) {
         this.backgroundColor = backgroundColor;
+        redraw();
     }
 
     public Layer findLayerById(String id) {
@@ -217,6 +227,41 @@ public abstract class Layer extends Vector4 implements Renderable, Updatable {
         interactManager.handleTouch(event);
     }
 
+    public void redraw() {
+        redrawImage = true;
+    }
+
+    public void redrawAll() {
+        for (Layer subLayer : subLayers)
+            subLayer.redrawAll();
+
+        redraw();
+    }
+
+    private boolean needsRedraw() {
+        boolean redraw = true;
+        if (!redrawImage && lastResult != null)
+            if (size.getXAsInt() == lastResult.getWidth() && size.getYAsInt() == lastResult.getHeight())
+                redraw = false;
+
+        for (Layer subLayer : subLayers) {
+            if (subLayer.needsRedraw())
+                redraw = true;
+        }
+
+        for (RenderModifier modifier : modifiers) {
+            if (modifier.needsToBeRedrawn())
+                redraw = true;
+        }
+
+        return redraw;
+    }
+
+    private void setLastResult(Bitmap lastResult) {
+        this.lastResult = lastResult;
+        this.redrawImage = false;
+    }
+
     @Override
     public void update() {
         callUpdate();
@@ -224,11 +269,21 @@ public abstract class Layer extends Vector4 implements Renderable, Updatable {
 
     @Override
     public Bitmap export(Vector2 size) {
+        redraw();
+
         float oversizeX = getWidth() - size.getX();
         float oversizeY = getHeight() - size.getY();
 
-        float width = getWidth() - Math.max(oversizeX, oversizeY);
-        float height = getHeight() - Math.max(oversizeX, oversizeY);
+        float reduceByScale = Math.max(oversizeX, oversizeY);
+
+        float reduceBy = 1f;
+        if (reduceByScale == oversizeX)
+            reduceBy = size.getX() / getWidth();
+        else if (reduceByScale == oversizeY)
+            reduceBy = size.getY() / getHeight();
+
+        float width = getWidth() * reduceBy;
+        float height = getHeight() * reduceBy;
 
         Bitmap bitmap = render();
         if (oversizeX != 0 || oversizeY != 0)
@@ -253,8 +308,11 @@ public abstract class Layer extends Vector4 implements Renderable, Updatable {
 
     public Bitmap render() {
         if (size.getX() > 0 && size.getY() > 0) {
+            if (!needsRedraw())
+                return lastResult;
+
             Bitmap.Config config = Bitmap.Config.ARGB_8888;
-            Bitmap bitmap = Bitmap.createBitmap((int) size.getX(), (int) size.getY(), config);
+            Bitmap bitmap = Bitmap.createBitmap(size.getXAsInt(), size.getYAsInt(), config);
             Canvas subCanvas = new Canvas(bitmap);
 
             //Draw background
@@ -283,6 +341,8 @@ public abstract class Layer extends Vector4 implements Renderable, Updatable {
 
             for (RenderModifier modifier : modifiers)
                 modifier.onOverdrawSubLayers(subCanvas);
+
+            setLastResult(bitmap);
 
             return bitmap;
         }
